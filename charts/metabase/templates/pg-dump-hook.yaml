@@ -1,0 +1,76 @@
+{{- if and (eq .Values.database.type "postgres") .Values.database.postgresBackup.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ (printf "%s-pg-dump" (include "metabase.fullname" .)) }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: pg-dump
+    spec:
+      containers:
+        - name: pg-dump
+          image: {{ .Values.database.postgresBackup.image }}
+          env:
+            # - name: PGDATABASE
+            #   value: "mypgdatabase"
+            # - name: PGPASSWORD
+            #   value: "mypgpassword"
+            # - name: "PGUSER"
+            #   value: "mypguser"
+            # - name: "PGHOST"
+            #   value: "mypghost.example.com"
+            # - name: "PGPORT"
+            #   value: "5432"
+            - name: PGDATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretConnectionURIKey }}
+            - name: PGSCHEMA
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretSchemaKey }}
+            - name: PGPASSWORD 
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretPasswordKey }}
+            - name: PGHOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretHostKey }}
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretUsernameKey }}
+            - name: PGDATABASE 
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretDatabaseNameKey }}
+            - name: PGPORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.postgresBackup.existingSecret }}
+                  key: {{ .Values.database.postgresBackup.existingSecretPortKey }}
+          command:
+            - sh
+            - -c
+            - pg_dump -Fc -v -f /backup/db_dump.backup -n $PGSCHEMA $PGDATABASE
+          volumeMounts:
+            - name: backup-storage
+              mountPath: /backup
+      restartPolicy: Never
+      volumes:
+        # TODO volume configuration
+        - name: backup-storage
+          emptyDir: {}
+{{- end }}

@@ -128,6 +128,19 @@ database:
     resources: {}
     securityContext:
       runAsNonRoot: true
+  postgresBackup:
+    enabled: false
+    image: "postgres:latest"
+    ## secret with the database credentials must exist
+    # existingSecret:
+    # existingSecretUsernameKey:
+    # existingSecretPasswordKey:
+    # existingSecretConnectionURIKey:
+    # existingSecretPortKey:
+    # existingSecretHostKey:
+    # existingSecretDatabaseNameKey:
+    # existingSecretSchemaKey:
+
 
 password:
   # Changing Metabase password complexity:
